@@ -169,17 +169,29 @@ class OdmlXlsTable(OdmlTable):
         oldrow = []
         row = 0
 
-        max_col_len = [len(self._header_titles[h]) for h in self._header]
+        doclen = len(self._odmldict) if self._docdict else 0
+        max_col_len = [1]*max(len(self._header),2*doclen+1)
+        for i,h in enumerate(self._header):
+            if h!= None:
+                max_col_len[i] = len(self._header_titles[h])
         col_style = 0
         row_style = 0
 
-        # add document information in first row
-        sheet.write(row,0,'Document Information',styles["document_info"])
-        for a, attribute in enumerate(sorted(self._docdict)):
-            sheet.write(row, 2*a+1, attribute, styles["document_info"])
-            sheet.write(row, 2*a+2, self._docdict[attribute], styles["document_info"])
+        if self._docdict:
+            # add document information in first row
+            sheet.write(row,0,'Document Information',styles["document_info"])
 
-        row += 1
+            for a, attribute in enumerate(sorted(self._docdict)):
+                sheet.write(row, 2*a+1, attribute, styles["document_info"])
+                sheet.write(row, 2*a+2, self._docdict[attribute], styles["document_info"])
+
+                #adjusting cell widths
+                if len(attribute) > max_col_len[2*a+1]:
+                    max_col_len[2*a+1] = len(attribute)
+                if self._docdict[attribute]!= None and (len(self._docdict[attribute]) > max_col_len[2*a+2]):
+                    max_col_len[2*a+2] = len(self._docdict[attribute])
+
+            row += 1
 
         # write the header
         for col, h in enumerate(self._header):
@@ -229,7 +241,7 @@ class OdmlXlsTable(OdmlTable):
 
             # row_content: only those elements of row_dic, that will be
             # visible in the table
-            row_content = [row_dic[h] for h in self._header]
+            row_content = [row_dic[h] if h!=None else '' for h in self._header]
 
             # check, if row would be empty or same as the row before;
             # if so, skip the row
@@ -263,7 +275,10 @@ class OdmlXlsTable(OdmlTable):
                     stylestring = 'highlight'
 
                 style = styles[stylestring]
-                cell_content = row_dic[h]
+                if h != None:
+                    cell_content = row_dic[h]
+                else:
+                    cell_content = ''
 
                 #special style for datetime-objects
 
